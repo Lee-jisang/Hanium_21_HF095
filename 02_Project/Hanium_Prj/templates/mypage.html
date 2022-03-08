@@ -1,0 +1,848 @@
+{% load static %}
+{% block content %}
+
+<head>
+    <title>Task Manager - MyPage</title>
+    <!--chart js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.4.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+
+    <!--jsfile-->
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/jquery.scrolly.min.js' %}"></script>
+    <script src="{% static 'js/skel.min.js' %}"></script>
+    <script src="{% static 'js/util.js' %}"></script>
+    <script src="{% static 'js/mains.js' %}"></script>
+
+
+    <meta charset="utf-8"/>
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="{% static 'css/mains.css' %}"/>
+    <style>
+        .all {
+            text-align: center;
+
+        }
+
+        .inner {
+            text-align: center;
+            position: absolute;
+            top: 150px;
+            width: 1400px;
+            left: 150px;
+            height: 750px;
+            text-align: center;
+        }
+
+        .info {
+            text-align: center;
+            position: absolute;
+            width: 1350px;
+            left: 20px;
+            top: 10px;
+            text-align: center;
+        }
+
+        .info2 {
+            text-align: center;
+            position: absolute;
+            width: 1350px;
+            left: 20px;
+            top: 900px;
+            text-align: center;
+        }
+
+        .bar {
+            position: absolute;
+            width: 800px;
+            left: 100px;
+            top: 300px;
+            text-align: center;
+        }
+
+        .doughnut {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            left: 950px;
+            top: 300px;
+        }
+
+        .bar2 {
+            position: absolute;
+            width: 800px;
+            left: 100px;
+            top: 1000px;
+        }
+
+        .doughnut2 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            left: 950px;
+            top: 1000px;
+        }
+
+
+    </style>
+</head>
+
+
+<body style="background-color:#fcfcfc">
+
+<header id="header">
+    <nav class="left">
+        <a href="#menu"><span>Menu</span></a>
+    </nav>
+    <a href="{% url 'index' %}" class="logo">Task Manager</a>
+    <nav class="right">
+        <a class="button alt" href="login">Log in</a>
+        <a class="button alt">{{user.username}}</a>
+        <a class="button alt" href="{% url 'logout' %}">Logout</a>
+    </nav>
+</header>
+
+<!-- Menu -->
+<nav id="menu">
+    <ul class="links">
+        <li><a href="{% url 'index' %}">Home</a></li>
+        <li><a href="freeboard">게시판</a></li>
+        <li><a href="questionboard">Q & A</a></li>
+        <li><a href="{% url 'mypage' %}">마이페이지</a></li>
+        <li><a href="{% url 'ranking' %}">랭킹게시판</a></li>
+    </ul>
+    <ul class="actions vertical">
+        <li><a href="#" class="button fit">Login</a></li>
+    </ul>
+</nav>
+
+
+<div class="all" style="background-color:#ffffff ">
+    <div class="inner">
+        <div class="info">
+            <h1>'{{user.username}}'님 반갑습니다!</h1>
+            <h3>email : {{user.email}}</h3>
+            <h3>가입일 : {{user.date_joined}}</h3>
+            <h3>
+                ----------------------------------------------------------------------------------------------------------------------------------------------------</h3>
+            <h2>졸음 통계</h2>
+        </div>
+        <!--barchart-->
+        <div class="bar">
+            <div>
+                <script>
+                    // 졸음 데이터 json 형태로 받아오기
+                    let d_data_js = JSON.parse("{{ d_data_js | escapejs }}");
+
+                    var dictObject_d = {} // 졸음 데이터 날짜별 저장 딕셔너리
+                    for (var i = 0; i < d_data_js.length; i++) {
+                        // 특정 날짜가 딕셔너리 키로 존재한다면 해당 값 1 증가
+                        if (String(d_data_js[i].d_time).substr(0, 10) in dictObject_d) {
+                            dictObject_d[String(d_data_js[i].d_time).substr(0, 10)] += 1
+                        } else { // 특정 날짜가 존재하지 않으면 추가하고 값은 1로 초기화
+                            dictObject_d[String(d_data_js[i].d_time).substr(0, 10)] = 1
+                        }
+                    }
+                    // 테스트 로그 출력
+                    for (var key in dictObject_d) {
+                        console.log(key);
+                    }
+
+                </script>
+                <canvas id="myChart"></canvas>
+                <script>
+
+                    let mychart; // 생성된 차트 저장할 전역 변수
+
+                    // 현재 날짜 정보 가져오기
+                    var now = new Date();
+                    var year = now.getFullYear();
+                    var month = now.getMonth();
+                    var date = now.getDate();
+
+                    let sleep_select_date = year + '-' + month + '-' + date // 날짜 정보 전처리
+                    sleep_date = new Date(year, month, date); // 현재 날짜를 Date형으로 변환
+
+                    labels1 = []; // x축 라벨
+                    // 현재 날짜 기준 +7일 날짜정보 얻기
+                    for (var i = 0; i < 7; i++) {
+                        var date = sleep_date.getDate();
+                        if (sleep_date.getDate() < 10) {
+                            date = '0' + sleep_date.getDate(); // 일 데이터 1 -> 01 형태로 전처리
+                        }
+                        var month = sleep_date.getMonth() + 1;
+                        if (month < 10) {
+                            month = '0' + month; // 월 데이터 1 -> 01 형태로 전처리
+                        }
+                        sleep_input_str = sleep_date.getFullYear() + '-' + month + '-' + date;
+                        labels1.push(sleep_input_str); // x축 라벨에 날짜 추가
+                        console.log(sleep_input_str);
+                        sleep_date = new Date(sleep_date.getFullYear(),
+                            sleep_date.getMonth(), sleep_date.getDate() + 1); // 1일 증가
+                    }
+
+                    data_d = []; // label 리스트에 담긴 날짜에 측정된 졸음감지 수 저장
+                    for (var i = 0; i < 7; i++) {
+                        var str = labels1[i].toString();
+                        if (str in dictObject_d) { // 날짜가 딕셔너리 키에 존재한다면
+                            data_d.push(dictObject_d[str]); // 값 저장
+
+                        } else { // 날짜가 딕셔너리 키에 없다면
+                            data_d.push(0); // 0 저장
+                            console.log(1);
+                        }
+                    }
+
+
+                    const data8 = {
+                        labels: labels1, // x축 라벨
+                        datasets: [{
+                            label: 'Number of drowsiness detections', // 라벨 이름
+                            backgroundColor: 'rgb(255, 99, 132)', // 배경색
+                            borderColor: 'rgb(255, 99, 132)', // 경계선 색
+                            data: data_d, // x축 각 날짜에 대응하는 졸음감지 수 데이터
+                        }]
+                    };
+
+                    title_str = labels1[0] + ' ~ ' + labels1[6] + '기간의 졸음감지 데이터' // title 설정
+                    const config1 = {
+                        type: 'line', // line 형태의 그래프
+                        data: data8, // 데이터
+                        options: {
+                            title: {display: true, text: title_str}, // 그래프 제목
+                            scales: {
+                                xAxes: [{ticks: {fontColor: 'rgba(27, 163, 156, 1)', fontSize: '15'}}], // x축 설정
+                                yAxes: [{
+                                    ticks: {
+                                        beginAtZero: true, stepSize: 1, fontColor: 'rgba(246, 36, 89, 1)',
+                                        fontSize: '15'
+                                    }
+                                }]
+                            } // y축 간격을 1로 설정
+                        }
+                    };
+                    var myChart = new Chart( // 'mychart' id 태크에 차트 만들기
+                        document.getElementById('myChart').getContext('2d'),
+                        config1
+                    );
+                    mychart = myChart; // 차트 전역 변수에 저장
+
+                    function button_chart_click() { // '통계확인' 버튼 이벤트 처리
+                        timedate = document.getElementById("chart_date").value; // 선택한 날짜값 받아오기
+
+                        // 날짜 데이터 전처리
+                        var year = timedate.split('-')[0];
+                        console.log(year);
+                        var month = timedate.split('-')[1];
+                        console.log(month);
+                        var date = timedate.split('-')[2];
+
+                        mychart.destroy(); // 기존에 있던 차트 destroy
+
+                        sleep_date = new Date(year, month, date); // 선택한 날짜 Date형식으로 변환
+                        console.log(sleep_date);
+
+                        labels1 = []; // x축 라벨
+                        // 선택 날짜 기준 +7일 날짜정보 얻기
+                        for (var i = 0; i < 7; i++) {
+                            var date = sleep_date.getDate();
+                            if (sleep_date.getDate() < 10) {
+                                date = '0' + sleep_date.getDate(); // 일 데이터 1 -> 01 형태로 전처리
+                            }
+                            var month = sleep_date.getMonth();
+                            if (month < 10) {
+                                month = '0' + month; // 월 데이터 1 -> 01 형태로 전처리
+                            }
+                            sleep_input_str = sleep_date.getFullYear() + '-' + month + '-' + date;
+                            labels1.push(sleep_input_str); // 라벨에 날짜 추가
+                            console.log(sleep_input_str);
+                            sleep_date = new Date(sleep_date.getFullYear(),
+                                sleep_date.getMonth(), sleep_date.getDate() + 1); // 1일 증가
+                        }
+
+                        data_d = []; // label 리스트에 담긴 날짜에 측정된 졸음감지 수 저장
+                        for (var i = 0; i < 7; i++) {
+                            var str = labels1[i].toString();
+                            console.log(str);
+                            if (str in dictObject_d) { // 날짜가 딕셔너리 키에 존재한다면
+                                data_d.push(dictObject_d[str]); // 값 저장
+
+                            } else { // 날짜가 딕셔너리 키에 없다면
+                                data_d.push(0); // 0 저장
+                                console.log(1);
+                            }
+                        }
+
+                        const data = {
+                            labels: labels1, // x축 라벨
+                            datasets: [{
+                                label: 'Number of drowsiness detections', // 라벨 이름
+                                backgroundColor: 'rgb(255, 99, 132)', // 배경색
+                                borderColor: 'rgb(255, 99, 132)', // 경계선 색
+                                data: data_d, // x축 날짜에 대응하는 졸음감지 수 데이터
+                            }]
+                        };
+                        title_str = labels1[0] + ' ~ ' + labels1[6] + '기간의 졸음감지 데이터' // title 설정
+                        const config2 = {
+                            type: 'line', // line 형태의 그래프
+                            data, // 데이터
+                            options: {
+                                title: {display: true, text: title_str}, // 그래프 제목
+                                scales: {
+                                    xAxes: [{ticks: {fontColor: 'rgba(27, 163, 156, 1)', fontSize: '15'}}], // x축 설정
+                                    yAxes: [{
+                                        ticks: {
+                                            beginAtZero: true, stepSize: 1, fontColor: 'rgba(246, 36, 89, 1)',
+                                            fontSize: '15'
+                                        }
+                                    }]
+                                } // y축 간격을 1로 설정
+                            }
+                        };
+                        var myChart = new Chart( // 'mychart' id 태크에 차트 만들기
+                            document.getElementById('myChart'),
+                            config2
+                        );
+                        mychart = myChart; // 차트 전역 변수에 저장
+                    }
+
+                </script>
+            </div>
+            <p><input type="date" id="chart_date"></p>
+            <p><input type="submit" value="통계 확인" onclick="button_chart_click()"></p>
+        </div>
+
+        <!--doughnutchart-->
+        <div class="doughnut">
+            <div>
+                <canvas id="dChart" width="400" height="400"></canvas>
+                <script type="text/javascript">
+                    let dchart_sleep_date; // 확인할 날짜 데이터 저장
+                    let chart; // 만든 차트를 저장할 전역변수
+                    label = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+                        '21', '22', '23', '24'
+                    ]
+                    backgroundColors = ['rgb(255, 0, 0)', 'rgb(255, 187, 0)', 'rgb(171, 242, 0)', 'rgb(0, 216, 255)',
+                        'rgb(0, 89, 255)', 'rgb(255, 9, 221)', 'rgb(242, 203, 97)', 'rgb(135, 229, 132)', 'rgb(105, 109, 255)',
+                        'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                        'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                        'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)'
+                    ]
+
+                    var dictObject_d_h = {} // 특정 날짜 시간당 졸음 데이터
+
+                    // 현재 날짜 정보
+                    var now = new Date();
+                    var year = now.getFullYear();
+                    var month = now.getMonth() + 1;
+                    var date = now.getDate();
+                    tempdate = year + '-' + month + '-' + date
+
+                    for (var i = 0; i < d_data_js.length; i++) {
+                        if (String(d_data_js[i].d_time).substr(0, 10) === tempdate) { // 선택날짜와 날짜정보가 같다면
+                            if (String(d_data_js[i].d_time).substr(11, 2) in dictObject_d_h) { // 특정 시간대 정보가 딕셔너리에 저장되있다면
+                                dictObject_d_h[String(d_data_js[i].d_time).substr(11, 2)] += 1; // 1 증가
+                            } else {
+                                dictObject_d_h[String(d_data_js[i].d_time).substr(11, 2)] = 1; // 1로 초기화 후 추가
+                            }
+                        }
+                    }
+
+                    labels_temp = [] // 그래프를 구성하는 라벨
+                    data_temp = [] // 그래프를 구성하는 데이터
+                    background_temp = [] // 라벨의 각 색
+
+                    var i = 0;
+                    if (tempdate in dictObject_d) { // 선택날짜가 딕셔너리에 있다면
+                        for (var key in dictObject_d_h) { // 시간당 딕셔너리에 있는 모든 키를 조회
+                            labels_temp.push(key + '시');
+                            data_temp.push(dictObject_d_h[key]);
+                            background_temp.push(backgroundColors[i]);
+                            i += 1;
+                        }
+                    } else { // 선택날짜가 딕셔너리에 없다면
+                        labels_temp.push("데이터 없음");
+                        data_temp.push(1);
+                        background_temp.push('rgb(0,0,0)');
+                    }
+                    //
+                    const data = {
+                        labels: labels_temp,
+                        datasets: [{
+                            label: 'My First Dataset',
+
+                            data: data_temp,
+
+                            backgroundColor: background_temp,
+                            hoverOffset: 4
+                        }]
+                    };
+
+                    title_str = tempdate + ' 시간대별 졸음감지 데이터' // title 설정
+                    const config = {
+                        type: 'doughnut', // 도넛 유형의 그래프
+                        data: data, // 데이터
+                        options: {
+                            title: {display: true, text: title_str}, // 제목
+                            responsive: false
+                        }
+                    };
+
+                    var dChart = new Chart( // 'dChart' id 태그에 그래프 만들기
+                        document.getElementById('dChart'),
+                        config
+                    );
+                    chart = dChart; // 전역변수에 그래프 저장
+
+                    function button1_click() { // '통계확인' 버튼 이벤트 처리 함수
+                        timedate = document.getElementById("userdate").value; // 선택날짜 값 받아오기
+
+                        dchart_sleep_date = timedate;
+
+                        console.log(dchart_sleep_date);
+                        chart.destroy(); // 현재 그려진 그래프 destroy
+                        tempdate = dchart_sleep_date;
+
+                        label = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+                            '21', '22', '23', '24'
+                        ]
+                        backgroundColors = ['rgb(255, 0, 0)', 'rgb(255, 187, 0)', 'rgb(171, 242, 0)', 'rgb(0, 216, 255)',
+                            'rgb(0, 89, 255)', 'rgb(255, 9, 221)', 'rgb(242, 203, 97)', 'rgb(135, 229, 132)', 'rgb(105, 109, 255)',
+                            'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                            'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                            'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)'
+                        ]
+
+                        var dictObject_d_h = {} // 특정 날짜 시간당 졸음 데이터
+
+                        for (var i = 0; i < d_data_js.length; i++) {
+                            if (String(d_data_js[i].d_time).substr(0, 10) === tempdate) { // 선택날짜와 날짜정보가 같다면
+                                if (String(d_data_js[i].d_time).substr(11, 2) in dictObject_d_h) { // 특정 시간대 정보가 딕셔너리에 저장되있다면
+                                    dictObject_d_h[String(d_data_js[i].d_time).substr(11, 2)] += 1; // 1 증가
+                                } else {
+                                    dictObject_d_h[String(d_data_js[i].d_time).substr(11, 2)] = 1; // 1로 초기화 후 추가
+                                }
+                            }
+                        }
+
+                        labels_temp = [] // 그래프를 구성하는 라벨
+                        data_temp = [] // 라벨을 구성하는 데이터
+                        background_temp = [] // 라벨의 각 색
+
+                        var i = 0;
+                        if (tempdate in dictObject_d) { // 선택날짜가 딕셔너리에 있다면
+                            for (var key in dictObject_d_h) { // 시간당 딕셔너리에 있는 모든 키를 조회
+                                labels_temp.push(key);
+                                data_temp.push(dictObject_d_h[key]);
+                                background_temp.push(backgroundColors[i]);
+                                i += 1;
+                            }
+                        } else { // 선택날짜가 딕셔너리에 없다면
+                            labels_temp.push("데이터 없음");
+                            data_temp.push(1);
+                            background_temp.push('rgb(0,0,0)');
+                        }
+
+                        const data = {
+                            labels: labels_temp,
+                            datasets: [{
+                                label: 'My First Dataset',
+
+                                data: data_temp,
+
+                                backgroundColor: background_temp,
+                                hoverOffset: 4
+                            }]
+                        };
+                        title_str = tempdate + ' 시간대별 졸음감지 데이터'
+                        const config = {
+                            type: 'doughnut', // 도넛 유형의 그래프
+                            data: data,
+                            options: {
+                                title: {display: true, text: title_str},
+                                responsive: false
+                            }
+                        };
+
+                        var dChart = new Chart( // 'dChart' id 태그에 그래프 만들기
+                            document.getElementById('dChart'),
+                            config
+                        );
+                        chart = dChart; // 전역변수에 그래프 저장
+                    }
+                </script>
+            </div>
+
+            <p><input type="date" id="userdate"></p>
+            <p><input type="submit" value="통계 확인" onclick="button1_click()"></p>
+
+        </div>
+        <div class="info2">
+            <h3>
+                ----------------------------------------------------------------------------------------------------------------------------------------------------</h3>
+            <h2>눈깜빡임 통계</h2>
+        </div>
+
+        <!--barchart-->
+        <div class="bar2">
+            <div>
+                <canvas id="myChart2"></canvas>
+                <script>
+                    console.log('---------');
+                    // 눈깜빡임 데이터 json 형태로 받아오기
+                    let b_data_js = JSON.parse("{{ b_data_js | escapejs }}");
+
+                    var dictObject_b = {} // 눈깜빡임 데이터 저장 딕셔너리
+                    for (var i = 0; i < b_data_js.length; i++) {
+                        // 특정 날짜가 딕셔너리 키로 존재한다면 해당 값 1 증가
+                        if (String(b_data_js[i].b_time).substr(0, 10) in dictObject_b) {
+                            dictObject_b[String(b_data_js[i].b_time).substr(0, 10)] += 1
+                        } else { // 특정 날짜가 존재하지 않으면 추가하고 값은 1로 초기화
+                            dictObject_b[String(b_data_js[i].b_time).substr(0, 10)] = 1
+                        }
+                    }
+                    // 테스트 로그 출력
+                    for (var key in dictObject_b) {
+                        console.log(key);
+                    }
+
+                </script>
+                <script>
+
+                    let mychart2; // 생성된 차트 저장할 전역 변수
+
+                    // 현재 날짜 정보 가져오기
+                    var now = new Date();
+                    var year = now.getFullYear();
+                    var month = now.getMonth();
+                    var date = now.getDate();
+
+                    blink_select_date = year + '-' + month + '-' + date // 날짜 정보 전처리
+                    blink_date = new Date(year, month, date); // 현재 날짜를 Date형으로 변환
+
+                    labels1 = []; // x축 라벨
+                    // 현재 날짜 기준 +7일 날짜정보 얻기
+                    for (var i = 0; i < 7; i++) {
+                        var date = blink_date.getDate();
+                        if (blink_date.getDate() < 10) {
+                            date = '0' + blink_date.getDate(); // 일 데이터 1 -> 01 형태로 전처리
+                        }
+                        var month = blink_date.getMonth() + 1;
+                        if (month < 10) {
+                            month = '0' + month; // 월 데이터 1 -> 01 형태로 전처리
+                        }
+                        blink_input_str = blink_date.getFullYear() + '-' + month + '-' + date;
+                        labels1.push(blink_input_str); // x축 라벨에 날짜 추가
+                        console.log(blink_input_str);
+                        blink_date = new Date(blink_date.getFullYear(),
+                            blink_date.getMonth(), blink_date.getDate() + 1); // 1일 증가
+                    }
+
+                    data_d = []; // label 리스트에 담긴 날짜에 측정된 눈깜빡임 수 저장
+                    for (var i = 0; i < 7; i++) {
+                        var str = labels1[i].toString();
+                        if (str in dictObject_b) { // 날짜가 딕셔너리 키에 존재한다면
+                            data_d.push(dictObject_b[str]); // 값 저장
+
+                        } else { // 날짜가 딕셔너리 키에 없다면
+                            data_d.push(0); // 0 저장
+                            console.log(1);
+                        }
+                    }
+
+
+                    const data6 = {
+                        labels: labels1, // x축 라벨
+                        datasets: [{
+                            label: 'Number of blink alerts', // 라벨 이름
+                            backgroundColor: 'rgb(255, 99, 132)', // 배경색
+                            borderColor: 'rgb(255, 99, 132)', // 경계선 색
+                            data: data_d, // x축 각 날짜에 대응하는 졸음감지 수 데이터
+                        }]
+                    };
+
+                    title_str = labels1[0] + ' ~ ' + labels1[6] + '기간의 눈 깜빡임 부족 감지 데이터' // title 설정
+                    const config3 = {
+                        type: 'line', // line 형태의 그래프
+                        data6, // 데이터
+                        options: {
+                            title: {display: true, text: title_str}, // 그래프 제목
+                            scales: {
+                                xAxes: [{ticks: {fontColor: 'rgba(27, 163, 156, 1)', fontSize: '15'}}],
+                                yAxes: [{
+                                    ticks: {
+                                        beginAtZero: true, stepSize: 1, fontColor: 'rgba(246, 36, 89, 1)',
+                                        fontSize: '15'
+                                    }
+                                }]
+                            } // y축 간격을 1로 설정
+
+
+                        }
+                    };
+                    var myChart2 = new Chart( // 'myChart2' id 태크에 차트 만들기
+                        document.getElementById('myChart2'),
+                        config3
+                    );
+                    mychart2 = myChart2; // 차트 전역 변수에 저장
+
+                    function button_chart_click2() { // '통계확인' 버튼 이벤트 처리
+                        timedate = document.getElementById("chart_date2").value; // 선택한 날짜 값 받아오기
+
+                        // 날짜 데이터 전처리
+                        var year = timedate.split('-')[0];
+                        console.log(year);
+                        var month = timedate.split('-')[1];
+                        console.log(month);
+                        var date = timedate.split('-')[2];
+
+                        mychart2.destroy(); // 현재 그려진 그래프 destroy
+
+                        blink_date = new Date(year, month, date); // 선택한 날짜 Date형식으로 변환
+                        console.log(blink_date);
+
+                        labels1 = []; // x축 라벨
+                        // 선택 날짜 기준 +7일 날짜정보 얻기
+                        for (var i = 0; i < 7; i++) {
+                            var date = blink_date.getDate();
+                            if (blink_date.getDate() < 10) {
+                                date = '0' + blink_date.getDate(); // 일 데이터 1 -> 01 형태로 전처리
+                            }
+                            var month = blink_date.getMonth();
+                            if (month < 10) {
+                                month = '0' + month; // 월 데이터 1 -> 01 형태로 전처리
+                            }
+                            blink_input_str = blink_date.getFullYear() + '-' + month + '-' + date;
+                            labels1.push(blink_input_str); // 라벨에 날짜 추가
+                            console.log(blink_input_str);
+                            blink_date = new Date(blink_date.getFullYear(),
+                                blink_date.getMonth(), blink_date.getDate() + 1); // 1일 증가
+                        }
+
+                        data_d = []; // label 리스트에 담긴 날짜에 측정된 눈깜빡임 수 저장
+                        for (var i = 0; i < 7; i++) {
+
+                            var str = labels1[i].toString();
+                            console.log(str);
+                            if (str in dictObject_b) { // 날짜가 딕셔너리 키에 존재한다면
+                                data_d.push(dictObject_b[str]); // 값 저장
+
+                            } else { // 날짜가 딕셔너리 키에 없다면
+                                data_d.push(0); // 0 저장
+                                console.log(1);
+                            }
+                        }
+
+
+                        const data = {
+                            labels: labels1, // x축 라벨
+                            datasets: [{
+                                label: 'Number of blink alerts', // 라벨 이름
+                                backgroundColor: 'rgb(255, 99, 132)', // 배경색
+                                borderColor: 'rgb(255, 99, 132)', // 경계선 색
+                                data: data_d, // x축 날짜에 대응하는 졸음감지 수 데이터
+                            }]
+                        };
+                        title_str = labels1[0] + ' ~ ' + labels1[6] + '기간의 눈 깜빡임 부족 감지 데이터' // title 설정
+                        const config2 = {
+                            type: 'line', // line 형태의 그래프
+                            data, // 데이터
+                            options: {
+                                title: {display: true, text: title_str}, // 그래프 제목
+                                scales: {
+                                    xAxes: [{ticks: {fontColor: 'rgba(27, 163, 156, 1)', fontSize: '15'}}],// x축 설정
+                                    yAxes: [{
+                                        ticks: {
+                                            beginAtZero: true, stepSize: 1,
+                                            fontColor: 'rgba(246, 36, 89, 1)', fontSize: '15'
+                                        }
+                                    }]
+                                } // y축 간격을 1로 설정
+                            }
+                        };
+                        var myChart2 = new Chart( // 'myChart2' id 태크에 차트 만들기
+                            document.getElementById('myChart2'),
+                            config2
+                        );
+                        mychart2 = myChart2; // 차트 전역 변수에 저장
+                    }
+
+                </script>
+            </div>
+            <p><input type="date" id="chart_date2"></p>
+            <p><input type="submit" value="통계 확인" onclick="button_chart_click2()"></p>
+        </div>
+
+        <!--doughnutchart-->
+        <div class="doughnut2">
+            <div>
+                <canvas id="dChart2" width="400" height="400"></canvas>
+                <script type="text/javascript">
+                    let dchart_blink_date; // 확인할 날짜 데이터 저장
+                    let chart3; // 만든 차트를 저장할 전역변수
+                    label = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+                        '21', '22', '23', '24'
+                    ]
+                    backgroundColors = ['rgb(255, 0, 0)', 'rgb(255, 187, 0)', 'rgb(171, 242, 0)', 'rgb(0, 216, 255)',
+                        'rgb(0, 89, 255)', 'rgb(255, 9, 221)', 'rgb(242, 203, 97)', 'rgb(135, 229, 132)', 'rgb(105, 109, 255)',
+                        'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                        'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                        'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)'
+                    ]
+
+                    var dictObject_b_h = {} // 특정 날짜 시간당 졸음 데이터
+
+                    // 현재 날짜 정보
+                    var now = new Date();
+                    var year = now.getFullYear();
+                    var month = now.getMonth()+1;
+                    var date = now.getDate();
+                    tempdate = year + '-' + month + '-' + date
+
+                    for (var i = 0; i < b_data_js.length; i++) {
+                        if (String(b_data_js[i].b_time).substr(0, 10) === tempdate) { // 선택날짜와 날짜정보가 같다면
+                            if (String(b_data_js[i].b_time).substr(11, 2) in dictObject_b_h) { // 특정 시간대 정보가 딕셔너리에 저장되있다면
+                                dictObject_b_h[String(b_data_js[i].b_time).substr(11, 2)] += 1; // 1 증가
+                            } else {
+                                dictObject_b_h[String(b_data_js[i].b_time).substr(11, 2)] = 1; // 1로 초기화 후 추가
+                            }
+                        }
+                    }
+
+                    labels_temp = [] // 그래프를 구성하는 라벨
+                    data_temp = [] // 그래프를 구성하는 데이터
+                    background_temp = [] // 라벨의 각 색
+
+                    var i = 0;
+                    if (tempdate in dictObject_b) { // 선택날짜가 딕셔너리에 있다면
+                        for (var key in dictObject_b_h) { // 시간당 딕셔너리에 있는 모든 키를 조회
+                            labels_temp.push(key + '시');
+                            data_temp.push(dictObject_b_h[key]);
+                            background_temp.push(backgroundColors[i]);
+                            i += 1;
+                        }
+                    } else { // 선택날짜가 딕셔너리에 없다면
+                        labels_temp.push("데이터 없음");
+                        data_temp.push(1);
+                        background_temp.push('rgb(0,0,0)');
+                    }
+
+                    const data4 = {
+                        labels: labels_temp,
+                        datasets: [{
+                            label: 'My First Dataset',
+
+                            data: data_temp,
+
+                            backgroundColor: background_temp,
+                            hoverOffset: 4
+                        }]
+                    };
+                    title_str = tempdate + ' 시간대별 눈 깜빡임 부족 감지 데이터' // title 설정
+                    const config4 = {
+                        type: 'doughnut', // 도넛 유형의 그래프
+                        data: data4, // 데이터
+                        options: {
+                            title: {display: true, text: title_str}, // 제목
+                            responsive: false
+                        }
+                    };
+
+                    var dChart2 = new Chart( // 'dChart2' id 태그에 그래프 만들기
+                        document.getElementById('dChart2'),
+                        config4
+                    );
+                    chart3 = dChart2; // 전역변수에 그래프 저장
+
+                    function button1_click2() { // '통계확인' 버튼 이벤트 처리 함수
+                        timedate = document.getElementById("userdate2").value; // 선택날짜 값 받아오기
+
+                        dchart_blink_date = timedate;
+
+                        console.log(dchart_blink_date);
+                        chart3.destroy(); // 현재 그려진 그래프 destroy
+                        tempdate = dchart_blink_date;
+
+                        label = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+                            '21', '22', '23', '24'
+                        ]
+                        backgroundColors = ['rgb(255, 0, 0)', 'rgb(255, 187, 0)', 'rgb(171, 242, 0)', 'rgb(0, 216, 255)',
+                            'rgb(0, 89, 255)', 'rgb(255, 9, 221)', 'rgb(242, 203, 97)', 'rgb(135, 229, 132)', 'rgb(105, 109, 255)',
+                            'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                            'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)',
+                            'rgb(5, 9, 132)', 'rgb(5, 9, 132)', 'rgb(5, 9, 132)'
+                        ]
+
+                        var dictObject_b_h = {} // 특정 날짜 시간당 졸음 데이터
+
+                        for (var i = 0; i < b_data_js.length; i++) {
+                            if (String(b_data_js[i].b_time).substr(0, 10) === tempdate) { // 선택날짜와 날짜정보가 같다면
+                                if (String(b_data_js[i].b_time).substr(11, 2) in dictObject_b_h) { // 특정 시간대 정보가 딕셔너리에 저장되있다면
+                                    dictObject_b_h[String(b_data_js[i].b_time).substr(11, 2)] += 1; // 1 증가
+                                } else {
+                                    dictObject_b_h[String(b_data_js[i].b_time).substr(11, 2)] = 1; // 1로 초기화 후 추가
+                                }
+                            }
+                        }
+
+                        labels_temp = [] // 그래프를 구성하는 라벨
+                        data_temp = [] // 라벨을 구성하는 데이터
+                        background_temp = [] // 라벨의 각 색
+
+                        var i = 0;
+                        if (tempdate in dictObject_b) { // 선택날짜가 딕셔너리에 있다면
+                            for (var key in dictObject_b_h) { // 시간당 딕셔너리에 있는 모든 키를 조회
+                                labels_temp.push(key);
+                                data_temp.push(dictObject_b_h[key]);
+                                background_temp.push(backgroundColors[i]);
+                                i += 1;
+                            }
+                        } else { // 선택날짜가 딕셔너리에 없다면
+                            labels_temp.push("데이터 없음");
+                            data_temp.push(1);
+                            background_temp.push('rgb(0,0,0)');
+                        }
+
+                        const data4 = {
+                            labels: labels_temp,
+                            datasets: [{
+                                label: 'My First Dataset',
+
+                                data: data_temp,
+
+                                backgroundColor: background_temp,
+                                hoverOffset: 4
+                            }]
+                        };
+                        title_str = tempdate + ' 시간대별 눈 깜빡임 부족 감지 데이터'
+                        const config4 = {
+                            type: 'doughnut', // 도넛 유형의 그래프
+                            data: data4,
+                            options: {
+                                title: {display: true, text: title_str},
+                                responsive: false
+                            }
+                        };
+
+                        var dChart2 = new Chart( // 'dChart2' id 태그에 그래프 만들기
+                            document.getElementById('dChart2'),
+                            config4
+                        );
+                        chart3 = dChart2; // 전역변수에 그래프 저장
+                    }
+                </script>
+            </div>
+
+            <p><input type="date" id="userdate2"></p>
+            <p><input type="submit" value="통계 확인" onclick="button1_click2()"></p>
+
+        </div>
+
+    </div>
+</div>
+</body>
+
+{% endblock %}

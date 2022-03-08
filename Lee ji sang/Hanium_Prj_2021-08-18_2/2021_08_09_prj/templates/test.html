@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+{% load static %}
+
+<body style="background-color:#fcfcfc">
+    <div class="all" style="background-color:#ffffff ">
+        <div>
+            <script type="text/javascript">
+            /* JSON 객체 */
+            let d_data_js = JSON.parse("{{ d_data_js | escapejs }}");
+
+            for (var i = 0; i < d_data_js.length; i++) {
+                var data = d_data_js[i];
+                document.write('==================================================' + '<br>');
+                document.write(data.id_id + ' / ' + data.d_time + ' / ' + data.username + '<br>');
+            }
+            </script>
+        </div>
+    </div>
+</body>
+{% endblock %}
